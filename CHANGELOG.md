@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Fetch icons that a cached icon set lacks from the Iconify API. A set cached before an icon was added to the collection made new icons fail with "Icon not found" (#2).
+- Report unknown icon names as not found instead of raising when fetching from the Iconify API.
+- Scan Markdown files for icon components. v0.3.5 added `content/**/*.md` to the default globs but skipped those files.
+
 ## v0.3.5
 
 - Add configurable scanner source globs

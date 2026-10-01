@@ -54,7 +54,8 @@ defmodule PhoenixIconify.Scanner do
     content = File.read!(path)
 
     cond do
-      Path.extname(path) in [".heex", ".astral"] -> scan_heex(content, path)
+      # Markdown in Astral and similar tools can use HEEx components.
+      Path.extname(path) in [".heex", ".astral", ".md"] -> scan_heex(content, path)
       Path.extname(path) == ".ex" -> scan_ex(content)
       true -> []
     end

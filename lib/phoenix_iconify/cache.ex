@@ -103,6 +103,43 @@ defmodule PhoenixIconify.Cache do
   end
 
   @doc """
+  Gets icons of one set, keyed by their full `prefix:name`.
+
+  Icons come from the cached set when it has them. A cached set can predate icons
+  added to the collection since it was downloaded, so the rest are fetched one by
+  one with `fetch_icon`. Icons that exist in neither are left out.
+  """
+  @spec get_icons(String.t(), [String.t()], (String.t(), String.t() ->
+                                               {:ok, Iconify.Icon.t()} | {:error, term()})) ::
+          [{String.t(), Iconify.Icon.t()}]
+  def get_icons(prefix, icon_names, fetch_icon \\ &Iconify.Fetcher.fetch_icon/2) do
+    cached =
+      case fetch_set(prefix) do
+        {:ok, set} ->
+          for name <- icon_names,
+              {:ok, icon} <- [Iconify.Set.get(set, name)],
+              into: %{},
+              do: {name, icon}
+
+        {:error, _} ->
+          %{}
+      end
+
+    for name <- icon_names,
+        {:ok, icon} <- [cached_or_fetched(cached, prefix, name, fetch_icon)] do
+      full_name = "#{prefix}:#{name}"
+      {full_name, %{icon | name: full_name}}
+    end
+  end
+
+  defp cached_or_fetched(cached, prefix, name, fetch_icon) do
+    case Map.fetch(cached, name) do
+      {:ok, icon} -> {:ok, icon}
+      :error -> fetch_icon.(prefix, name)
+    end
+  end
+
+  @doc """
   Clears all cached icon sets.
   """
   def clear do
