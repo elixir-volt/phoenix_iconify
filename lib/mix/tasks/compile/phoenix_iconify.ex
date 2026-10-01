@@ -103,43 +103,11 @@ defmodule Mix.Tasks.Compile.PhoenixIconify do
   end
 
   defp fetch_prefix_icons(prefix, full_names) do
-    icon_names = Enum.map(full_names, &icon_name!/1)
-
-    case Cache.fetch_set(prefix) do
-      {:ok, set} -> fetch_icons_from_set(prefix, icon_names, set)
-      {:error, _} -> fetch_icons_from_api(prefix, icon_names)
-    end
+    Cache.get_icons(prefix, Enum.map(full_names, &icon_name!/1))
   end
 
   defp icon_name!(name) do
     {:ok, _prefix, icon_name} = Iconify.parse_name(name)
     icon_name
-  end
-
-  defp fetch_icons_from_set(prefix, icon_names, set) do
-    Enum.flat_map(icon_names, fn icon_name ->
-      case Iconify.Set.get(set, icon_name) do
-        {:ok, icon} ->
-          full_name = "#{prefix}:#{icon_name}"
-          [{full_name, %{icon | name: full_name}}]
-
-        :error ->
-          []
-      end
-    end)
-  end
-
-  defp fetch_icons_from_api(prefix, icon_names) do
-    case Iconify.Fetcher.fetch_icons(prefix, icon_names) do
-      {:ok, icons} ->
-        Enum.map(icons, fn {name, icon} ->
-          full_name = "#{prefix}:#{name}"
-          {full_name, %{icon | name: full_name}}
-        end)
-
-      {:error, reason} ->
-        Mix.shell().error("PhoenixIconify: Failed to fetch #{prefix} icons: #{inspect(reason)}")
-        []
-    end
   end
 end
