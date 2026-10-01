@@ -42,16 +42,17 @@ defmodule PhoenixIconify.MixProject do
     if path = System.get_env("ICONIFY_PATH") do
       [path: path]
     else
-      "~> 0.3.0"
+      "~> 0.3.1"
     end
   end
 
   def cli do
-    [preferred_envs: [ci: :test]]
+    [preferred_envs: [ci: :test, "test.e2e": :test]]
   end
 
   defp aliases do
     [
+      "test.e2e": ["test --only e2e"],
       ci: [
         "compile --warnings-as-errors",
         "format --check-formatted",

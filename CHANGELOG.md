@@ -3,8 +3,9 @@
 ## Unreleased
 
 - Fetch icons that a cached icon set lacks from the Iconify API. A set cached before an icon was added to the collection made new icons fail with "Icon not found" (#2).
-- Report unknown icon names as not found instead of raising when fetching from the Iconify API.
+- Report unknown icon names as not found instead of raising when fetching from the Iconify API. Requires `iconify` 0.3.1.
 - Scan Markdown files for icon components. v0.3.5 added `content/**/*.md` to the default globs but skipped those files.
+- Include Astral templates and Markdown in the default globs only when Astral is a dependency, so other projects don't scan their Markdown.
 
 ## v0.3.5
 

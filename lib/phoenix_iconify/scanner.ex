@@ -13,11 +13,11 @@ defmodule PhoenixIconify.Scanner do
   alias Phoenix.LiveView.TagEngine
   alias Phoenix.LiveView.Tokenizer, as: LegacyTokenizer
 
-  @default_source_globs [
-    "lib/**/*.ex",
-    "lib/**/*.heex",
-    "priv/**/*.heex",
-    "pages/**/*.astral",
+  @phoenix_source_globs ["lib/**/*.ex", "lib/**/*.heex", "priv/**/*.heex"]
+
+  # Astral renders HEEx from its templates and Markdown, so those hold icons too.
+  @astral_source_globs [
+    "pages/**/*.{astral,md}",
     "components/**/*.astral",
     "layouts/**/*.astral",
     "content/**/*.md"
@@ -45,9 +45,15 @@ defmodule PhoenixIconify.Scanner do
 
   defp source_paths do
     :phoenix_iconify
-    |> Application.get_env(:source_globs, @default_source_globs)
+    |> Application.get_env(:source_globs, default_source_globs())
     |> List.wrap()
     |> Enum.flat_map(&Path.wildcard/1)
+  end
+
+  defp default_source_globs do
+    if Code.ensure_loaded?(Astral),
+      do: @phoenix_source_globs ++ @astral_source_globs,
+      else: @phoenix_source_globs
   end
 
   defp scan_file(path) do

@@ -55,6 +55,36 @@ defmodule PhoenixIconify.ScannerTest do
     end
   end
 
+  describe "default source globs" do
+    setup %{tmp_dir: tmp} do
+      File.mkdir_p!(Path.join(tmp, "content"))
+      File.write!(Path.join(tmp, "content/post.md"), ~s(Mail <.icon name="lucide:mail" />.))
+
+      previous = Application.get_env(:phoenix_iconify, :source_globs)
+      Application.delete_env(:phoenix_iconify, :source_globs)
+
+      on_exit(fn ->
+        if previous, do: Application.put_env(:phoenix_iconify, :source_globs, previous)
+      end)
+    end
+
+    test "skip Markdown without Astral", %{tmp_dir: tmp} do
+      refute Code.ensure_loaded?(Astral)
+      assert File.cd!(tmp, &Scanner.scan/0) == []
+    end
+
+    test "include Astral templates and Markdown when Astral is present", %{tmp_dir: tmp} do
+      Code.compile_string("defmodule Astral do end")
+
+      on_exit(fn ->
+        :code.purge(Astral)
+        :code.delete(Astral)
+      end)
+
+      assert File.cd!(tmp, &Scanner.scan/0) == ["lucide:mail"]
+    end
+  end
+
   describe "scan_heex_content/1" do
     test "extracts icon names from heex content" do
       content = """
