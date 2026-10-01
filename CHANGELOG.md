@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.3.6
 
 - Fetch icons that a cached icon set lacks from the Iconify API. A set cached before an icon was added to the collection made new icons fail with "Icon not found" (#2).
 - Report unknown icon names as not found instead of raising when fetching from the Iconify API. Requires `iconify` 0.3.1.
