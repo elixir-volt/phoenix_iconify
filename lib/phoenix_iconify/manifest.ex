@@ -3,6 +3,13 @@ defmodule PhoenixIconify.Manifest do
   Manages the icon manifest stored in priv/.
 
   The manifest contains all discovered icons, cached between compilations.
+
+  Each application compiled with the `:phoenix_iconify` compiler writes its
+  own manifest. At runtime, icons are read from the manifests of every
+  loaded application, so a library that ships `priv/iconify/manifest.json`
+  brings its icons along; the application's own manifest wins when two
+  define the same icon. The compiler and the mix tasks read and write only
+  the application's own manifest.
   """
 
   @manifest_filename "manifest.json"
@@ -50,12 +57,45 @@ defmodule PhoenixIconify.Manifest do
   end
 
   @doc """
-  Gets icons from the manifest, loading from persistent storage on first use.
+  Reads and merges the manifests at `paths`, later ones winning.
+
+  Defaults to `manifest_paths/0`: the manifests of loaded libraries, then
+  the application's own.
+  """
+  @spec read_all([Path.t()]) :: %{String.t() => Iconify.Icon.t()}
+  def read_all(paths \\ manifest_paths()) do
+    Enum.reduce(paths, %{}, fn path, icons -> Map.merge(icons, read(path)) end)
+  end
+
+  @doc """
+  Returns the manifests runtime icons come from: those shipped by loaded
+  applications, sorted by application, followed by the application's own
+  manifest, which may not exist yet.
+  """
+  @spec manifest_paths() :: [Path.t()]
+  def manifest_paths do
+    own = manifest_path()
+
+    # Applications without a code path have no priv directory of their own.
+    libraries =
+      for app <- loaded_apps(),
+          priv = :code.priv_dir(app),
+          is_list(priv),
+          path = Path.join([List.to_string(priv), "iconify", @manifest_filename]),
+          path != own and File.regular?(path),
+          do: path
+
+    libraries ++ [own]
+  end
+
+  @doc """
+  Gets icons from every loaded manifest, loading from persistent storage on
+  first use.
   """
   def get_icons do
     case :persistent_term.get({__MODULE__, :icons}, nil) do
       nil ->
-        icons = read()
+        icons = read_all()
         :persistent_term.put({__MODULE__, :icons}, icons)
         icons
 
@@ -68,7 +108,7 @@ defmodule PhoenixIconify.Manifest do
   Reloads icons from disk into persistent_term.
   """
   def reload do
-    icons = read()
+    icons = read_all()
     :persistent_term.put({__MODULE__, :icons}, icons)
     icons
   end
@@ -84,11 +124,12 @@ defmodule PhoenixIconify.Manifest do
   Adds an icon to the runtime cache and optionally persists to disk.
   """
   def add_icon(name, %Iconify.Icon{} = icon, opts \\ []) do
-    updated = Map.put(get_icons(), name, %{icon | name: name})
-    :persistent_term.put({__MODULE__, :icons}, updated)
+    icon = %{icon | name: name}
+    :persistent_term.put({__MODULE__, :icons}, Map.put(get_icons(), name, icon))
 
+    # Only the application's own manifest, never icons from its libraries.
     if Keyword.get(opts, :persist, false) do
-      write(updated)
+      write(Map.put(read(), name, icon))
     end
 
     :ok
@@ -109,12 +150,16 @@ defmodule PhoenixIconify.Manifest do
   end
 
   defp discover_manifest_path do
-    :application.loaded_applications()
-    |> Enum.map(fn {app, _description, _version} -> app end)
-    |> Enum.sort()
-    |> Enum.reject(&(&1 in [:phoenix_iconify, :iconify]))
+    loaded_apps()
     |> Enum.map(&Path.join([priv_dir(&1), "iconify", @manifest_filename]))
     |> Enum.find(&File.regular?/1)
+  end
+
+  defp loaded_apps do
+    :application.loaded_applications()
+    |> Enum.map(fn {app, _description, _version} -> app end)
+    |> Enum.reject(&(&1 in [:phoenix_iconify, :iconify]))
+    |> Enum.sort()
   end
 
   defp mix_project_app do
