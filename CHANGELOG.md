@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.3.7
 
 - Read runtime icons from the manifests of every loaded application, so libraries can ship `priv/iconify/manifest.json` with the icons their components use. The application's own manifest wins when two define the same icon; the compiler and mix tasks still read and write only the project's own manifest. `PhoenixIconify.Manifest.read_all/1` and `manifest_paths/0` expose the merged view.
 - `PhoenixIconify.Manifest.add_icon/3` with `persist: true` writes the application's own manifest plus the new icon, not the merged runtime set.
