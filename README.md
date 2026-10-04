@@ -225,6 +225,18 @@ mix phoenix_iconify.cache list
 mix phoenix_iconify.cache clear
 ```
 
+## Icons in libraries
+
+A library can use icons in its own components, and they reach the application without any configuration there. Add the compiler to the library's `mix.exs` as above, and ship its manifest in the Hex package:
+
+```elixir
+defp package do
+  [files: ~w(lib priv/iconify/manifest.json mix.exs README.md LICENSE)]
+end
+```
+
+Commit `priv/iconify/manifest.json`, so applications compiling the library never fetch icons. At runtime, icons are read from the manifests of every loaded application; when two define the same icon, the application's own manifest wins. The compiler and the `mix phoenix_iconify.*` tasks only ever read and write the current project's own manifest.
+
 ## Volt projects
 
 For projects created with [Volt](https://hex.pm/packages/volt), PhoenixIconify is the server-rendered option:
